@@ -1,0 +1,95 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 13 17:28:47 2022
+
+@author: Fari
+"""
+import numpy as np
+import scipy.io as sio
+import statistics as sta
+from math import sqrt
+
+
+Mosaic = sio.loadmat('F210Mosaic.mat')
+
+di = Mosaic['d']
+data = di['data']
+gtm = di['gtm']
+train = di['train']
+
+data_array = data[0,0]
+gtm_array = gtm[0,0]
+train_array = train[0,0]
+error_array = np.zeros ((80,120))
+
+test = np.zeros (12)
+dif = np.zeros (9)
+    
+
+def mean_class(n) :  #calculate mean class n_th with random sample
+    class_n = np.zeros ((9,12))
+    class_sum = np.zeros ((9,12))
+    class_mean = np.zeros ((9,12))
+    i = 0
+    while i < 100 :
+        x1 = np.random.randint (0,79)
+        y1 = np.random.randint (0,119)
+        if gtm_array [x1,y1] == n : 
+           for j in range (12) :
+               class_n[n,j] = (data_array[x1,y1,j])
+               class_sum[n,j] += class_n[n,j]
+               j+=1       
+           i+=1
+    
+    for j in range (12) :
+        class_mean[n,j] = class_sum[n,j] / 100
+        
+    return class_mean[n]          
+            
+
+def euclidean_dist(doc1, doc2): #Calculate euclidean distance between two arrays
+    pre_square_sum = 0
+    for idx,_ in enumerate(doc1):
+        pre_square_sum += (doc1[idx] - doc2[idx]) ** 2
+    
+    return sqrt(pre_square_sum)
+
+        
+def train():      #Classification for each sample
+    for x in range (0,80) :
+        
+        for y in range (0,120) :
+
+            for j in range (12) :
+                test[j] = data_array[x,y,j]
+                    
+            for i in range (1,9) :
+                dif[0]=1000.0
+                dif[i] = euclidean_dist(test, mean_class(i))
+            
+            for m in range (1,9) :
+                if dif[m] == min(dif) :
+                      train_array[x,y] = m
+                m+=1
+                           
+            
+def confusion():   #Calculate & print confusion_matrix
+    train()
+    confusion_matrix = np.zeros((9,9),int)
+    
+    for x in range (0,80) :
+        
+        for y in range (0,120) :
+            
+            for m in range (1,9) :
+                
+                for k in range (1,9) :
+                    if gtm_array[x,y]==m and train_array[x,y]==k :
+                       confusion_matrix[m,k]+=1
+    
+    print(confusion_matrix)           
+
+confusion()
+
+
+
